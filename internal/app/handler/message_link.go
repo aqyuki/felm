@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/aqyuki/felm/internal/app/rule"
 	"github.com/aqyuki/felm/pkg/cache"
 	"github.com/aqyuki/felm/pkg/discord"
 	"github.com/aqyuki/felm/pkg/logging"
@@ -49,7 +48,7 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 				zap.Bool("is_bot", message.Author.Bot),
 			)))
 
-	if rule.IsBot(message.Author) {
+	if isBot(message.Author) {
 		logger.Debug("skip processing message because it was sent by bot")
 		return nil
 	}
@@ -75,7 +74,7 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 			zap.String("channel_id", ids.channelID),
 			zap.String("message_id", ids.messageID)))
 
-	if !rule.IsSameGuild(ids.guildID, message) {
+	if !isSameGuild(ids.guildID, message) {
 		logger.Debug("skip processing message because it was sent from different guild")
 		return nil
 	}
@@ -91,7 +90,7 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 			Wrapf(err, "error occurred while fetching channel information (channel_id = %s)", ids.channelID)
 	}
 
-	if rule.IsNSFW(citationChannel) {
+	if isNSFW(citationChannel) {
 		logger.Debug("skip processing message because it was sent from NSFW channel", zap.String("message_id", message.ID))
 		return nil
 	}
@@ -107,16 +106,16 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 			Wrapf(err, "error occurred while fetching message information (channel_id = %s, message_id = %s)", ids.channelID, ids.messageID)
 	}
 
-	if !rule.IsExpandable(citationMessage) {
+	if !isExpandable(citationMessage) {
 		logger.Debug("skip processing message because it was not expandable", zap.String("message_id", message.ID))
 		return nil
 	}
 
 	embed := emptyEmbed(citationChannel, citationMessage)
-	if rule.HasContent(citationMessage) {
+	if hasContent(citationMessage) {
 		embed.Description = citationMessage.Content
 	}
-	if rule.HasImage(citationMessage) {
+	if hasImage(citationMessage) {
 		embed.Image = &discordgo.MessageEmbedImage{
 			URL: citationMessage.Attachments[0].URL,
 		}
