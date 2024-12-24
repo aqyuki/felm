@@ -108,19 +108,27 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 			Wrapf(err, "error occurred while fetching message information (channel_id = %s, message_id = %s)", ids.channelID, ids.messageID)
 	}
 
-	if !isExpandable(citationMessage) {
-		logger.Debug("skip processing message because it was not expandable", zap.String("message_id", message.ID))
-		return nil
+	var embed *discordgo.MessageEmbed
+
+	if isExpandable(citationMessage) {
+		logger.Debug("expandable content detected.", zap.String("message_id", message.ID))
+		embed = emptyEmbed(citationChannel, citationMessage)
+		if hasContent(citationMessage) {
+			embed.Description = citationMessage.Content
+		}
+		if hasImage(citationMessage) {
+			embed.Image = &discordgo.MessageEmbedImage{
+				URL: citationMessage.Attachments[0].URL,
+			}
+		}
+	} else if hasEmbed(citationMessage) {
+		logger.Debug("embed content detected.", zap.String("message_id", message.ID))
+		embed = citationMessage.Embeds[0]
 	}
 
-	embed := emptyEmbed(citationChannel, citationMessage)
-	if hasContent(citationMessage) {
-		embed.Description = citationMessage.Content
-	}
-	if hasImage(citationMessage) {
-		embed.Image = &discordgo.MessageEmbedImage{
-			URL: citationMessage.Attachments[0].URL,
-		}
+	if embed == nil {
+		logger.Debug("skip processing message because it was not contains expandable content", zap.String("message_id", message.ID))
+		return nil
 	}
 
 	replyMsg := &discordgo.MessageSend{
