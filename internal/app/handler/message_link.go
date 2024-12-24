@@ -159,8 +159,11 @@ func (srv *CitationService) parseMessageLink(message string) (*messageLink, erro
 }
 
 func (srv *CitationService) fetchChannel(ctx context.Context, session *discordgo.Session, channelID string) (*discordgo.Channel, error) {
+	logger := logging.FromContext(ctx)
+
 	citationChannel, err := srv.channelCache.Get(channelID)
 	if err == nil {
+		logger.Debug("channel information fetched from cache (cache hit)", zap.String("channel_id", channelID))
 		return lo.ToPtr(citationChannel), nil
 	}
 	if !errors.Is(err, cache.ErrNotFound) {
@@ -171,10 +174,13 @@ func (srv *CitationService) fetchChannel(ctx context.Context, session *discordgo
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while fetching channel information (channel_id = %s)", channelID)
 	}
+	logger.Debug("channel information fetched from API (cache miss)", zap.String("channel_id", channelID))
 
 	if err := srv.channelCache.Set(channelID, lo.FromPtr(channel)); err != nil {
 		return nil, fmt.Errorf("error occurred while caching channel information (channel_id = %s)", channelID)
 	}
+	logger.Debug("channel information cached", zap.String("channel_id", channelID))
+
 	return channel, nil
 }
 
