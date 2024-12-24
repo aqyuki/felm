@@ -25,3 +25,7 @@ func hasContent(message *discordgo.Message) bool {
 func hasImage(message *discordgo.Message) bool {
 	return len(message.Attachments) != 0
 }
+
+func hasEmbed(message *discordgo.Message) bool {
+	return len(message.Embeds) != 0
+}
