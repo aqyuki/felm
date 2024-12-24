@@ -1,0 +1,8 @@
+services:
+  bot:
+    container_name: felm
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
