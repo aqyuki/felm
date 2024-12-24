@@ -8,3 +8,6 @@
 *.out
 go.work
 go.work.sum
+
+# environment
+.env
