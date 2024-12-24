@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/aqyuki/felm/compare/v1.0.1...v1.1.0) (2024-12-24)
+
+
+### Features
+
+* **pkg/cache:** add cache package ([#14](https://github.com/aqyuki/felm/issues/14)) ([2acaae7](https://github.com/aqyuki/felm/commit/2acaae7878c778dca1504774751b0970f5ddfd57))
+
+
+### Bug Fixes
+
+* **handler:** fix a problem that was expanding messages on unintended channels ([#16](https://github.com/aqyuki/felm/issues/16)) ([95013e7](https://github.com/aqyuki/felm/commit/95013e74d5e48d1294293b9dc5d935d4e737ff7b))
+
 ## [1.0.1](https://github.com/aqyuki/felm/compare/v1.0.0...v1.0.1) (2024-12-24)
 
 
