@@ -39,7 +39,7 @@ var rootCmd = &cobra.Command{
 		app := discord.NewConn(profile.Token,
 			discord.WithBaseContext(ctx),
 			discord.WithHandlerTimeout(profile.Timeout),
-			discord.WithMessageCreateHandler(handler.ExpandMessageLink),
+			discord.WithMessageCreateHandler(handler.NewCitationService().On),
 		)
 
 		logger.Info("starting application")

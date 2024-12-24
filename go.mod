@@ -4,6 +4,7 @@ go 1.23.4
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rs/xid v1.6.0
 	github.com/samber/oops v1.15.0
 	github.com/spf13/cobra v1.8.1
