@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/aqyuki/felm/internal/app/rule"
 	"github.com/aqyuki/felm/pkg/cache"
 	"github.com/aqyuki/felm/pkg/discord"
 	"github.com/aqyuki/felm/pkg/logging"
@@ -17,6 +16,8 @@ import (
 	"github.com/samber/oops"
 	"go.uber.org/zap"
 )
+
+const embedColor = 0x7fffff
 
 var _ discord.MessageCreateHandler = (*CitationService)(nil).On
 
@@ -49,7 +50,7 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 				zap.Bool("is_bot", message.Author.Bot),
 			)))
 
-	if rule.IsBot(message.Author) {
+	if isBot(message.Author) {
 		logger.Debug("skip processing message because it was sent by bot")
 		return nil
 	}
@@ -75,53 +76,28 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 			zap.String("channel_id", ids.channelID),
 			zap.String("message_id", ids.messageID)))
 
-	if !rule.IsSameGuild(ids.guildID, message) {
+	if !isSameGuild(ids.guildID, message) {
 		logger.Debug("skip processing message because it was sent from different guild")
 		return nil
 	}
 
-	citationMsg, err := srv.channelCache.Get(ids.channelID)
+	citationChannel, err := srv.fetchChannel(ctx, session, ids.channelID)
 	if err != nil {
-		if !errors.Is(err, cache.ErrNotFound) {
-			return oops.
-				Trace(trace.AcquireTraceID(ctx)).
-				With("trigger_message_detail",
-					oops.With("guild_id", message.GuildID),
-					oops.With("channel_id", message.ChannelID),
-					oops.With("message_id", message.ID)).
-				Wrapf(err, "error occurred while fetching channel information from cache (channel_id = %s)", message.ChannelID)
-		}
-
-		logger.Debug("cache not found, fetching channel information from API", zap.String("channel_id", message.ChannelID))
-		channel, err := session.Channel(ids.channelID)
-		if err != nil {
-			return oops.
-				Trace(trace.AcquireTraceID(ctx)).
-				With("trigger_message_detail",
-					oops.With("guild_id", message.GuildID),
-					oops.With("channel_id", message.ChannelID),
-					oops.With("message_id", message.ID)).
-				Wrapf(err, "error occurred while fetching channel information (channel_id = %s)", message.ChannelID)
-		}
-		if err := srv.channelCache.Set(channel.ID, lo.FromPtr(channel)); err != nil {
-			return oops.
-				Trace(trace.AcquireTraceID(ctx)).
-				With("trigger_message_detail",
-					oops.With("guild_id", message.GuildID),
-					oops.With("channel_id", message.ChannelID),
-					oops.With("message_id", message.ID)).
-				Wrapf(err, "error occurred while caching channel information (channel_id = %s)", message.ChannelID)
-		}
-		logger.Debug("channel information was cached successfully", zap.String("channel_id", channel.ID))
-		citationMsg = lo.FromPtr(channel)
+		return oops.
+			Trace(trace.AcquireTraceID(ctx)).
+			With("message_detail",
+				oops.With("guild_id", message.GuildID),
+				oops.With("channel_id", message.ChannelID),
+				oops.With("message_id", message.ID)).
+			Wrapf(err, "error occurred while fetching channel information (channel_id = %s)", ids.channelID)
 	}
 
-	if rule.IsNSFW(&citationMsg) {
+	if isNSFW(citationChannel) {
 		logger.Debug("skip processing message because it was sent from NSFW channel", zap.String("message_id", message.ID))
 		return nil
 	}
 
-	sourceMessage, err := session.ChannelMessage(ids.channelID, ids.messageID)
+	citationMessage, err := session.ChannelMessage(ids.channelID, ids.messageID)
 	if err != nil {
 		return oops.
 			Trace(trace.AcquireTraceID(ctx)).
@@ -132,18 +108,18 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 			Wrapf(err, "error occurred while fetching message information (channel_id = %s, message_id = %s)", ids.channelID, ids.messageID)
 	}
 
-	if !rule.IsExpandable(sourceMessage) {
+	if !isExpandable(citationMessage) {
 		logger.Debug("skip processing message because it was not expandable", zap.String("message_id", message.ID))
 		return nil
 	}
 
-	embed := emptyEmbed(&citationMsg, sourceMessage)
-	if rule.HasContent(sourceMessage) {
-		embed.Description = sourceMessage.Content
+	embed := emptyEmbed(citationChannel, citationMessage)
+	if hasContent(citationMessage) {
+		embed.Description = citationMessage.Content
 	}
-	if rule.HasImage(sourceMessage) {
+	if hasImage(citationMessage) {
 		embed.Image = &discordgo.MessageEmbedImage{
-			URL: sourceMessage.Attachments[0].URL,
+			URL: citationMessage.Attachments[0].URL,
 		}
 	}
 
@@ -183,13 +159,39 @@ func (srv *CitationService) parseMessageLink(message string) (*messageLink, erro
 	}, nil
 }
 
+func (srv *CitationService) fetchChannel(ctx context.Context, session *discordgo.Session, channelID string) (*discordgo.Channel, error) {
+	logger := logging.FromContext(ctx)
+
+	citationChannel, err := srv.channelCache.Get(channelID)
+	if err == nil {
+		logger.Debug("channel information fetched from cache (cache hit)", zap.String("channel_id", channelID))
+		return lo.ToPtr(citationChannel), nil
+	}
+	if !errors.Is(err, cache.ErrNotFound) {
+		return nil, fmt.Errorf("error occurred while fetching channel information from cache (channel_id = %s)", channelID)
+	}
+
+	channel, err := session.Channel(channelID)
+	if err != nil {
+		return nil, fmt.Errorf("error occurred while fetching channel information (channel_id = %s)", channelID)
+	}
+	logger.Debug("channel information fetched from API (cache miss)", zap.String("channel_id", channelID))
+
+	if err := srv.channelCache.Set(channelID, lo.FromPtr(channel)); err != nil {
+		return nil, fmt.Errorf("error occurred while caching channel information (channel_id = %s)", channelID)
+	}
+	logger.Debug("channel information cached", zap.String("channel_id", channelID))
+
+	return channel, nil
+}
+
 func emptyEmbed(channel *discordgo.Channel, message *discordgo.Message) *discordgo.MessageEmbed {
 	return &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{
 			Name:    message.Author.Username,
 			IconURL: message.Author.AvatarURL(""),
 		},
-		Color:     0x7fffff,
+		Color:     embedColor,
 		Timestamp: message.Timestamp.Format(time.RFC3339),
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: fmt.Sprintf("from %s", channel.Name),
