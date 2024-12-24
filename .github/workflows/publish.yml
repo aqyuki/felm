@@ -29,9 +29,6 @@ jobs:
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
 
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-
           echo "IMAGE_NAME=$IMAGE_ID:$VERSION" >> $GITHUB_OUTPUT
           echo "IMAGE_VERSION=$VERSION" >> $GITHUB_OUTPUT
       - uses: docker/build-push-action@v6
