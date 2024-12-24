@@ -17,6 +17,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const embedColor = 0x7fffff
+
 var _ discord.MessageCreateHandler = (*CitationService)(nil).On
 
 var ErrMessageLinkNotFound = errors.New("message link not found")
@@ -189,7 +191,7 @@ func emptyEmbed(channel *discordgo.Channel, message *discordgo.Message) *discord
 			Name:    message.Author.Username,
 			IconURL: message.Author.AvatarURL(""),
 		},
-		Color:     0x7fffff,
+		Color:     embedColor,
 		Timestamp: message.Timestamp.Format(time.RFC3339),
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: fmt.Sprintf("from %s", channel.Name),
