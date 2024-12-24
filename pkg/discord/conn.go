@@ -125,9 +125,11 @@ func buildMessageCreateHandler(ctx context.Context, handler MessageCreateHandler
 				zap.String("guild_id", m.GuildID),
 				zap.String("channel_id", m.ChannelID),
 				zap.String("message_id", m.ID),
-				zap.String("author_id", m.Author.ID),
-			),
-		)
+				zap.Dict("author",
+					zap.String("id", m.Author.ID),
+					zap.String("username", m.Author.Username),
+					zap.Bool("is_bot", m.Author.Bot),
+				)))
 
 		// create a new context from the base context with the deadline.
 		ctx, cancel := context.WithTimeout(ctx, MinimumHandlerTimeout)
