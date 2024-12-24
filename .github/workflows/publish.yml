@@ -1,0 +1,42 @@
+name: Publish Docker Image
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: generate image tag
+        id: generate-image-tag
+        run: |
+          IMAGE_NAME=felm
+          IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME
+
+          # Change all uppercase to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+          # Strip "v" prefix from tag name
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
+          echo "IMAGE_NAME=$IMAGE_ID:$VERSION" >> $GITHUB_OUTPUT
+          echo "IMAGE_VERSION=$VERSION" >> $GITHUB_OUTPUT
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ steps.generate-image-tag.outputs.IMAGE_NAME }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
