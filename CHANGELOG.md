@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/aqyuki/felm/compare/v1.0.0...v1.0.1) (2024-12-24)
+
+
+### Bug Fixes
+
+* **docker:** fix docker image tag format ([#9](https://github.com/aqyuki/felm/issues/9)) ([a656e0d](https://github.com/aqyuki/felm/commit/a656e0d2f6e60759abc35ae46825fe1e98d8e0f8))
+* **docker:** fix image url ([#12](https://github.com/aqyuki/felm/issues/12)) ([7a14bcd](https://github.com/aqyuki/felm/commit/7a14bcd5291a0a65f1776b59fe20fe37314ad12e))
+
 ## 1.0.0 (2024-12-24)
 
 
