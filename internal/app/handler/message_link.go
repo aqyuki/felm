@@ -80,12 +80,12 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 		return nil
 	}
 
-	sourceChannel, err := srv.channelCache.Get(message.ChannelID)
+	citationMsg, err := srv.channelCache.Get(ids.channelID)
 	if err != nil {
 		if !errors.Is(err, cache.ErrNotFound) {
 			return oops.
 				Trace(trace.AcquireTraceID(ctx)).
-				With("message_detail",
+				With("trigger_message_detail",
 					oops.With("guild_id", message.GuildID),
 					oops.With("channel_id", message.ChannelID),
 					oops.With("message_id", message.ID)).
@@ -93,11 +93,11 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 		}
 
 		logger.Debug("cache not found, fetching channel information from API", zap.String("channel_id", message.ChannelID))
-		channel, err := session.Channel(message.ChannelID)
+		channel, err := session.Channel(ids.channelID)
 		if err != nil {
 			return oops.
 				Trace(trace.AcquireTraceID(ctx)).
-				With("message_detail",
+				With("trigger_message_detail",
 					oops.With("guild_id", message.GuildID),
 					oops.With("channel_id", message.ChannelID),
 					oops.With("message_id", message.ID)).
@@ -106,17 +106,17 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 		if err := srv.channelCache.Set(channel.ID, lo.FromPtr(channel)); err != nil {
 			return oops.
 				Trace(trace.AcquireTraceID(ctx)).
-				With("message_detail",
+				With("trigger_message_detail",
 					oops.With("guild_id", message.GuildID),
 					oops.With("channel_id", message.ChannelID),
 					oops.With("message_id", message.ID)).
 				Wrapf(err, "error occurred while caching channel information (channel_id = %s)", message.ChannelID)
 		}
 		logger.Debug("channel information was cached successfully", zap.String("channel_id", channel.ID))
-		sourceChannel = lo.FromPtr(channel)
+		citationMsg = lo.FromPtr(channel)
 	}
 
-	if rule.IsNSFW(&sourceChannel) {
+	if rule.IsNSFW(&citationMsg) {
 		logger.Debug("skip processing message because it was sent from NSFW channel", zap.String("message_id", message.ID))
 		return nil
 	}
@@ -137,7 +137,7 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 		return nil
 	}
 
-	embed := emptyEmbed(&sourceChannel, sourceMessage)
+	embed := emptyEmbed(&citationMsg, sourceMessage)
 	if rule.HasContent(sourceMessage) {
 		embed.Description = sourceMessage.Content
 	}
