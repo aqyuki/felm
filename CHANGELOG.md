@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/aqyuki/felm/compare/v1.1.0...v1.2.0) (2024-12-24)
+
+
+### Features
+
+* **handler:** change to return a copy of the embed if the message contains only the embed ([#18](https://github.com/aqyuki/felm/issues/18)) ([38f974d](https://github.com/aqyuki/felm/commit/38f974d667a3af3f4272d7d59ba336a8cde363bd))
+
 ## [1.1.0](https://github.com/aqyuki/felm/compare/v1.0.1...v1.1.0) (2024-12-24)
 
 
