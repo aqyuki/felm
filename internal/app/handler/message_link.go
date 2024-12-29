@@ -116,9 +116,13 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 		if hasContent(citationMessage) {
 			embed.Description = citationMessage.Content
 		}
-		if hasImage(citationMessage) {
-			embed.Image = &discordgo.MessageEmbedImage{
-				URL: citationMessage.Attachments[0].URL,
+		if hasAttachment(citationMessage) {
+			attachement := citationMessage.Attachments[0]
+			if hasImage(citationMessage) {
+				logger.Debug("image content detected.", zap.String("message_id", message.ID))
+				embed.Image = &discordgo.MessageEmbedImage{
+					URL: attachement.URL,
+				}
 			}
 		}
 	} else if hasEmbed(citationMessage) {
