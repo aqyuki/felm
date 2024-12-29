@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/aqyuki/felm/compare/v1.2.0...v1.3.0) (2024-12-29)
+
+
+### Features
+
+* **handler:** change not to expand if video files only ([#20](https://github.com/aqyuki/felm/issues/20)) ([9598dfd](https://github.com/aqyuki/felm/commit/9598dfddf4f3af4d28836273eb3c2c61a886514e))
+
 ## [1.2.0](https://github.com/aqyuki/felm/compare/v1.1.0...v1.2.0) (2024-12-24)
 
 
