@@ -63,6 +63,7 @@ func defaultConn() *Conn {
 	return &Conn{
 		session:               nil,
 		messageCreateHandlers: make([]MessageCreateHandler, 0),
+		preClose:              make([]func(), 0),
 		handlerDeadline:       MinimumHandlerTimeout,
 		baseContext:           context.Background(),
 	}
