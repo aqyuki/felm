@@ -36,14 +36,14 @@ var rootCmd = &cobra.Command{
 		}
 		logger.Info("application profile was loaded")
 
-		app := discord.NewConn(profile.Token,
+		conn := discord.NewConn(profile.Token,
 			discord.WithBaseContext(ctx),
 			discord.WithHandlerTimeout(profile.Timeout),
 			discord.WithMessageCreateHandler(handler.NewCitationService().On),
 		)
 
 		logger.Info("starting application")
-		if err := app.Open(); err != nil {
+		if err := conn.Open(); err != nil {
 			logger.Error("failed to open connection", zap.Error(err))
 			return err
 		}
@@ -51,7 +51,7 @@ var rootCmd = &cobra.Command{
 		<-ctx.Done()
 		logger.Info("signal received, closing application")
 
-		if err := app.Close(); err != nil {
+		if err := conn.Close(); err != nil {
 			logger.Error("failed to close connection", zap.Error(err))
 			return err
 		}
