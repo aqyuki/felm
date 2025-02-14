@@ -110,37 +110,56 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 
 	var embed *discordgo.MessageEmbed
 
-	if isExpandable(citationMessage) {
-		logger.Debug("expandable content detected.", zap.String("message_id", message.ID))
-		embed = emptyEmbed(citationChannel, citationMessage)
-		if hasContent(citationMessage) {
-			embed.Description = citationMessage.Content
-		}
-		if hasAttachment(citationMessage) {
-			attachement := citationMessage.Attachments[0]
-			if hasImage(citationMessage) {
-				logger.Debug("image content detected.", zap.String("message_id", message.ID))
-				embed.Image = &discordgo.MessageEmbedImage{
-					URL: attachement.URL,
-				}
-			}
-		}
-	} else if hasEmbed(citationMessage) {
-		logger.Debug("embed content detected.", zap.String("message_id", message.ID))
-		embed = citationMessage.Embeds[0]
-	}
+	// メッセージ本文が空で画像等も含まれていない場合の処理
+	if citationMessage.Content == "" && len(citationMessage.Attachments) == 0 {
 
-	if embed == nil {
-		logger.Debug("skip processing message because it was not contains expandable content", zap.String("message_id", message.ID))
+		// Embedも含まれていない場合は何もせずに処理を終了する
+		if len(citationMessage.Embeds) == 0 {
+			logger.Debug("skip processing message because it was not contains expandable content", zap.String("message_id", message.ID))
+			return nil
+		}
+
+		// Embedが含まれている場合はEmbedをそのまま返す
+		if err := srv.sendReply(session, message.ChannelID, srv.buildReply(message.Message, citationMessage.Embeds[0])); err != nil {
+			return oops.
+				Trace(trace.AcquireTraceID(ctx)).
+				With("message_detail",
+					oops.With("guild_id", message.GuildID),
+					oops.With("channel_id", message.ChannelID),
+					oops.With("message_id", message.ID)).
+				Wrapf(err, "error occurred while sending message (channel_id = %s)", message.ChannelID)
+		}
 		return nil
 	}
 
-	replyMsg := &discordgo.MessageSend{
-		Embed:           embed,
-		Reference:       message.Reference(),
-		AllowedMentions: &discordgo.MessageAllowedMentions{RepliedUser: true},
+	logger.Debug("expandable content detected.", zap.String("message_id", message.ID))
+
+	var image *discordgo.MessageEmbedImage
+	if len(citationMessage.Attachments) != 0 {
+		attachment := citationMessage.Attachments[0]
+		if attachment.ContentType == "image/jpeg" || attachment.ContentType == "image/png" || attachment.ContentType == "image/gif" {
+			logger.Debug("image content detected.", zap.String("message_id", message.ID))
+			image = &discordgo.MessageEmbedImage{
+				URL: attachment.URL,
+			}
+		}
 	}
-	if _, err := session.ChannelMessageSendComplex(message.ChannelID, replyMsg); err != nil {
+
+	embed = &discordgo.MessageEmbed{
+		Author: &discordgo.MessageEmbedAuthor{
+			Name:    message.Author.Username,
+			IconURL: message.Author.AvatarURL(""),
+		},
+		Color:       embedColor,
+		Description: citationMessage.Content,
+		Image:       image,
+		Timestamp:   message.Timestamp.Format(time.RFC3339),
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: fmt.Sprintf("from %s", citationChannel.Name),
+		},
+	}
+
+	if err := srv.sendReply(session, message.ChannelID, srv.buildReply(message.Message, embed)); err != nil {
 		return oops.
 			Trace(trace.AcquireTraceID(ctx)).
 			With("message_detail",
@@ -197,16 +216,17 @@ func (srv *CitationService) fetchChannel(ctx context.Context, session *discordgo
 	return channel, nil
 }
 
-func emptyEmbed(channel *discordgo.Channel, message *discordgo.Message) *discordgo.MessageEmbed {
-	return &discordgo.MessageEmbed{
-		Author: &discordgo.MessageEmbedAuthor{
-			Name:    message.Author.Username,
-			IconURL: message.Author.AvatarURL(""),
-		},
-		Color:     embedColor,
-		Timestamp: message.Timestamp.Format(time.RFC3339),
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("from %s", channel.Name),
-		},
+func (srv *CitationService) buildReply(message *discordgo.Message, embed *discordgo.MessageEmbed) *discordgo.MessageSend {
+	return &discordgo.MessageSend{
+		Embed:           embed,
+		Reference:       message.Reference(),
+		AllowedMentions: &discordgo.MessageAllowedMentions{RepliedUser: true},
 	}
+}
+
+func (srv *CitationService) sendReply(session *discordgo.Session, channelID string, replyMsg *discordgo.MessageSend) error {
+	if _, err := session.ChannelMessageSendComplex(channelID, replyMsg); err != nil {
+		return fmt.Errorf("error occurred while sending message (channel_id = %s)", channelID)
+	}
+	return nil
 }
