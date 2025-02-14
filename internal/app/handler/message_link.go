@@ -50,7 +50,7 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 				zap.Bool("is_bot", message.Author.Bot),
 			)))
 
-	if isBot(message.Author) {
+	if message.Author.Bot {
 		logger.Debug("skip processing message because it was sent by bot")
 		return nil
 	}

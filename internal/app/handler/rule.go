@@ -2,10 +2,6 @@ package handler
 
 import "github.com/bwmarrin/discordgo"
 
-func isBot(author *discordgo.User) bool {
-	return author.Bot
-}
-
 func isSameGuild(guild string, msg *discordgo.MessageCreate) bool {
 	return msg.GuildID == guild
 }
