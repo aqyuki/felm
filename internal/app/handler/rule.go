@@ -2,10 +2,6 @@ package handler
 
 import "github.com/bwmarrin/discordgo"
 
-func isSameGuild(guild string, msg *discordgo.MessageCreate) bool {
-	return msg.GuildID == guild
-}
-
 func isNSFW(channel *discordgo.Channel) bool {
 	return channel.NSFW
 }

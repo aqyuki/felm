@@ -76,7 +76,7 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 			zap.String("channel_id", ids.channelID),
 			zap.String("message_id", ids.messageID)))
 
-	if !isSameGuild(ids.guildID, message) {
+	if message.GuildID != ids.guildID {
 		logger.Debug("skip processing message because it was sent from different guild")
 		return nil
 	}
