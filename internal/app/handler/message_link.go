@@ -142,6 +142,11 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 			image = &discordgo.MessageEmbedImage{
 				URL: attachment.URL,
 			}
+		} else if citationMessage.Content == "" {
+			// もし､メッセージ本文が空で画像が含まれていない場合は何もしない
+			// e.g. 動画のみの場合や添付ファイルのみの場合
+			logger.Debug("skip processing message because it does not contain expandable content", zap.String("message_id", message.ID))
+			return nil
 		}
 	}
 
