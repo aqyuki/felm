@@ -92,7 +92,7 @@ func (srv *CitationService) On(ctx context.Context, session *discordgo.Session, 
 			Wrapf(err, "error occurred while fetching channel information (channel_id = %s)", ids.channelID)
 	}
 
-	if isNSFW(citationChannel) {
+	if citationChannel.NSFW {
 		logger.Debug("skip processing message because it was sent from NSFW channel", zap.String("message_id", message.ID))
 		return nil
 	}

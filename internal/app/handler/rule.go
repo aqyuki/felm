@@ -2,10 +2,6 @@ package handler
 
 import "github.com/bwmarrin/discordgo"
 
-func isNSFW(channel *discordgo.Channel) bool {
-	return channel.NSFW
-}
-
 func isExpandable(message *discordgo.Message) bool {
 	return hasContent(message) || (hasImage(message) && !hasVideo(message))
 }
