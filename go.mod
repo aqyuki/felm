@@ -8,7 +8,7 @@ require (
 	github.com/rs/xid v1.6.0
 	github.com/samber/lo v1.49.1
 	github.com/samber/oops v1.16.0
-	github.com/spf13/cobra v1.9.0
+	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
 	go.uber.org/zap v1.27.0
 )
