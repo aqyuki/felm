@@ -1,4 +1,4 @@
-FROM golang:1.24.0 AS builder
+FROM golang:1.24.1 AS builder
 
 WORKDIR /app
 RUN --mount=type=bind,target=. go mod download
