@@ -3,7 +3,7 @@ module github.com/aqyuki/felm
 go 1.23.4
 
 require (
-	github.com/bwmarrin/discordgo v0.28.1
+	github.com/bwmarrin/discordgo v0.29.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rs/xid v1.6.0
 	github.com/samber/lo v1.50.0
